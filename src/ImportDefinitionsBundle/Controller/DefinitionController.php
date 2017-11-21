@@ -238,6 +238,22 @@ class DefinitionController extends ResourceController
 
             $result[] = $toColumn;
         }
+        
+        $etimColumns = [
+            "etimClass", "etimFeature", "etimValue"
+        ];
+
+        foreach ($etimColumns as $etimColumn) {
+            $toColumn = new ToColumn();
+            $toColumn->setLabel($etimColumn);
+            $toColumn->setFieldtype("input");
+            $toColumn->setIdentifier($etimColumn);
+            $toColumn->setType("etimColumn");
+
+            $result[] = $toColumn;
+        }
+
+
 
         foreach ($fields as $field) {
             if ($field instanceof DataObject\ClassDefinition\Data\Localizedfields) {
