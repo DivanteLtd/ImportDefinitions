@@ -58,6 +58,7 @@ pimcore.plugin.importdefinitions.definition.configDialog = Class.create({
             }
         }
 
+        console.log(pimcore.globalmanager.get('importdefinitions_interpreters'));
         fieldSetItems.push(new Ext.form.ComboBox({
             fieldLabel : t('importdefinitions_interpreters'),
             name : 'interpreter',

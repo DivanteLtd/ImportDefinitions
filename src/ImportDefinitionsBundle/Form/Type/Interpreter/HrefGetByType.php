@@ -18,7 +18,7 @@ use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 
-final class HrefType extends AbstractType
+final class HrefGetByType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
@@ -33,6 +33,6 @@ final class HrefType extends AbstractType
      */
     public function getBlockPrefix()
     {
-        return 'import_definitions_interpreter_href';
+        return 'import_definitions_interpreter_hrefgetby';
     }
 }
