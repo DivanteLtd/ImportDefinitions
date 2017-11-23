@@ -526,6 +526,7 @@ pimcore.plugin.importdefinitions.definition.item = Class.create(coreshop.resourc
 
                                                     if (gridRecord.length > 0) {
                                                         gridRecord = gridRecord[0];
+                                                        gridRecord.fromColumnStore = fromColumnStore;
 
                                                         var fromColumn = fromColumnStore.findRecord('identifier', newValue, 0, false, false, true);
                                                         var toColumn = toColumnStore.findRecord('identifier', gridRecord.get('toColumn'), 0, false, false, true);
@@ -568,6 +569,7 @@ pimcore.plugin.importdefinitions.definition.item = Class.create(coreshop.resourc
                                                             cls: 'importdefinitions-edit-button',
                                                             handler: function () {
                                                                 var dialog = new pimcore.plugin.importdefinitions.definition.configDialog();
+                                                                record.fromColumnStore = fromColumnStore;
                                                                 dialog.getConfigDialog(fromColumn, toColumn, record);
                                                             }
                                                         });
