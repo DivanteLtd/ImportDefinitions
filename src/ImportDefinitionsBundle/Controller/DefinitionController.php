@@ -239,22 +239,6 @@ class DefinitionController extends ResourceController
             $result[] = $toColumn;
         }
         
-        $etimColumns = [
-            "etimClass", "etimFeature", "etimValue"
-        ];
-
-        foreach ($etimColumns as $etimColumn) {
-            $toColumn = new ToColumn();
-            $toColumn->setLabel($etimColumn);
-            $toColumn->setFieldtype("input");
-            $toColumn->setIdentifier($etimColumn);
-            $toColumn->setType("etimColumn");
-
-            $result[] = $toColumn;
-        }
-
-
-
         foreach ($fields as $field) {
             if ($field instanceof DataObject\ClassDefinition\Data\Localizedfields) {
                 foreach ($activatedLanguages as $language) {
@@ -322,6 +306,13 @@ class DefinitionController extends ResourceController
                     }
                 }
             } elseif ($field instanceof DataObject\ClassDefinition\Data\Classificationstore) {
+                $toColumn = new ToColumn();
+                $toColumn->setLabel($field->getTitle());
+                $toColumn->setFieldtype("input");
+                $toColumn->setIdentifier($field->getName());
+                $toColumn->setType("etim");
+                $result[] = $toColumn;
+
                 continue;
                 $list = new DataObject\Classificationstore\GroupConfig\Listing();
 
