@@ -15,9 +15,7 @@
 namespace ImportDefinitionsBundle\Importer;
 
 use CoreShop\Component\Registry\ServiceRegistryInterface;
-use ImportDefinitionsBundle\Interpreter\HrefGetBy;
 use Pimcore\File;
-use Pimcore\Logger;
 use Pimcore\Mail;
 use Pimcore\Model\Document;
 use Pimcore\Model\DataObject\AbstractObject;
@@ -295,6 +293,7 @@ final class Importer implements ImporterInterface
         }
 
         $this->logger->info("Imported Object: " . $object->getRealFullPath());
+
         foreach ($definition->getMapping() as $mapItem) {
             $value = null;
 
@@ -345,14 +344,7 @@ final class Importer implements ImporterInterface
             $setter->set($object, $value, $map, $data);
         } else {
             $object->setValue($map->getToColumn(), $value);
-        };
-
-        if($interpreter instanceof HrefGetBy) {
-
-            Logger::error("\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-            Logger::error(dump($map).dump($value).dump($data));
         }
-
     }
 
     /**

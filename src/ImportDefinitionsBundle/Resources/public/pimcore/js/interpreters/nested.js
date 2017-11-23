@@ -14,14 +14,12 @@ pimcore.registerNS('pimcore.plugin.importdefinitions.interpreters.nested');
 
 pimcore.plugin.importdefinitions.interpreters.nested = Class.create(pimcore.plugin.importdefinitions.interpreters.abstract, {
     getLayout: function (fromColumn, toColumn, record, config) {
-
         // init
         var _this = this;
         var addMenu = [];
         var records = pimcore.globalmanager.get('importdefinitions_interpreters').getRange().map(function(interpreter) {return interpreter.get('interpreter')});
 
         Ext.each(records, function (interpreter) {
-            console.log(interpreter);
             if (interpreter === 'abstract')
                 return;
 

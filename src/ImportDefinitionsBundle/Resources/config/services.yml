@@ -117,11 +117,6 @@ services:
     tags:
       - { name: import_definition.interpreter, type: href, form-type: ImportDefinitionsBundle\Form\Type\Interpreter\HrefType }
 
-  import_definition.interpreter.hrefgetby:
-    class: ImportDefinitionsBundle\Interpreter\HrefGetBy
-    tags:
-      - { name: import_definition.interpreter, type: hrefgetby, form-type: ImportDefinitionsBundle\Form\Type\Interpreter\HrefGetByType }
-
   import_definition.interpreter.multi_href:
     class: ImportDefinitionsBundle\Interpreter\MultiHref
     tags:

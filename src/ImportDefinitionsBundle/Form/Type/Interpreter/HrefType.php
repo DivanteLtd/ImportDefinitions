@@ -24,7 +24,6 @@ final class HrefType extends AbstractType
     {
         $builder
             ->add('class', TextType::class)
-            ->add('field', TextType::class)
         ;
     }
 
