@@ -400,8 +400,13 @@ final class Importer implements ImporterInterface
             if ($obj instanceof AbstractObject) {
                 $key = File::getValidFilename($this->createKey($definition, $data));
 
-                if ($definition->getRelocateExistingObjects() || !$obj->getId()) {
+                if ($definition->getRelocateExistingObjects()) {
                     $obj->setParent(Service::createFolderByPath($this->createPath($definition, $data)));
+                }
+
+                if(!$obj->getId()) {
+                    $obj->setParent(Service::createFolderByPath("/Purgatory/CSV/".$definition->getName()));
+                    $obj->setProperty("targetFolder", "object", Service::createFolderByPath($this->createPath($definition, $data)));
                 }
 
                 if ($definition->getRenameExistingObjects() || !$obj->getId()) {
