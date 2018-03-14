@@ -260,6 +260,7 @@ final class Importer implements ImporterInterface
         $runner = null;
 
         $object = $this->getObjectForPrimaryKey($definition, $data);
+        $object->setOmitMandatoryCheck(true);
 
         if (!$object->getId()) {
             if ($definition->getSkipNewObjects()) {
