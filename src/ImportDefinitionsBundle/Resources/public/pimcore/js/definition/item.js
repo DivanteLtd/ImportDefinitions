@@ -353,6 +353,7 @@ pimcore.plugin.importdefinitions.definition.item = Class.create(coreshop.resourc
 
             if (pimcore.plugin.importdefinitions.provider[provider] !== undefined) {
                 if (this.data.provider === null) {
+                    this.data.provider = provider;
                     this.save(function () {
                         this.updateProviderMapViews();
                     }.bind(this));
@@ -430,21 +431,21 @@ pimcore.plugin.importdefinitions.definition.item = Class.create(coreshop.resourc
                             data: config.fromColumns
                         });
 
+                        if(typeof config.toColumns == 'undefined') {
+                            config.toColumns = [];
+                        }
                         var toColumnStore = new Ext.data.Store({
                             data: config.toColumns
                         });
 
                         var gridStore = new Ext.data.Store({
                             grouper: {
+
                                 groupFn: function (item) {
                                     var rec = toColumnStore.findRecord('identifier', item.data.toColumn);
 
                                     if (rec) {
-                                        if (rec.data.type === 'objectbrick' || rec.data.type === 'fieldcollection') {
-                                            return rec.data.setterConfig.class;
-                                        }
-
-                                        return rec.data.type ? rec.data.type : t('fields');
+                                        return rec.data.group;
                                     }
                                 }
                             },
@@ -533,7 +534,7 @@ pimcore.plugin.importdefinitions.definition.item = Class.create(coreshop.resourc
 
                                                         if (fromColumn && toColumn) {
                                                             var dialog = new pimcore.plugin.importdefinitions.definition.configDialog();
-                                                            dialog.getConfigDialog(fromColumn, toColumn, gridRecord);
+                                                            dialog.getConfigDialog(fromColumn, toColumn, gridRecord, config);
                                                         }
                                                     }
                                                 }
@@ -554,8 +555,11 @@ pimcore.plugin.importdefinitions.definition.item = Class.create(coreshop.resourc
                                         width: 50,
                                         align: 'right',
                                         renderer: function (value, metadata, record) {
-                                            var fromColumn = fromColumnStore.findRecord('identifier', record.get('fromColumn'));
-                                            var toColumn = toColumnStore.findRecord('identifier', record.get('toColumn'));
+                                            var fromColumnRecordNum = fromColumnStore.findExact('identifier', record.get('fromColumn'));
+                                            var fromColumn = fromColumnStore.getAt(fromColumnRecordNum);
+
+                                            var toColumnRecordNum = toColumnStore.findExact('identifier', record.get('toColumn'));
+                                            var toColumn = toColumnStore.getAt(toColumnRecordNum);
 
                                             if (fromColumn && toColumn) {
                                                 var id = Ext.id();
@@ -570,7 +574,7 @@ pimcore.plugin.importdefinitions.definition.item = Class.create(coreshop.resourc
                                                             handler: function () {
                                                                 var dialog = new pimcore.plugin.importdefinitions.definition.configDialog();
                                                                 record.fromColumnStore = fromColumnStore;
-                                                                dialog.getConfigDialog(fromColumn, toColumn, record);
+                                                                dialog.getConfigDialog(fromColumn, toColumn, record, config);
                                                             }
                                                         });
                                                     }
@@ -625,16 +629,31 @@ pimcore.plugin.importdefinitions.definition.item = Class.create(coreshop.resourc
     getSaveData: function () {
         var data = {
             configuration: {},
-            mapping: []
+            mapping: {}
         };
 
         if (this.mappingSettings.down('grid')) {
             var mapping = this.mappingSettings.down('grid').getStore().getRange();
-            var mappingResult = [];
+            var mappingResult = {};
+            var highestId = 0;
 
             mapping.forEach(function (map) {
                 if (map.data.fromColumn) {
-                    mappingResult.push(map.data);
+                    if (map.data.identifier) {
+                        mappingResult[map.data.identifier] = map.data;
+
+                        if (map.data.identifier > highestId) {
+                            highestId = map.data.identifier;
+                        }
+                    }
+                }
+            });
+
+            mapping.forEach(function (map) {
+                if (map.data.fromColumn) {
+                    if (!map.data.identifier) {
+                        mappingResult[highestId++] = map.data;
+                    }
                 }
             });
 
