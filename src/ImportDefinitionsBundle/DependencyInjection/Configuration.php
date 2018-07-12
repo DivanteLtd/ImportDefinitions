@@ -8,7 +8,7 @@
  * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
  * files that are distributed with this source code.
  *
- * @copyright  Copyright (c) 2016-2017 W-Vision (http://www.w-vision.ch)
+ * @copyright  Copyright (c) 2016-2018 w-vision AG (https://www.w-vision.ch)
  * @license    https://github.com/w-vision/ImportDefinitions/blob/master/gpl-3.0.txt GNU General Public License version 3 (GPLv3)
  */
 
@@ -29,7 +29,7 @@ class Configuration implements ConfigurationInterface
     /**
      * {@inheritdoc}
      */
-    public function getConfigTreeBuilder()
+    public function getConfigTreeBuilder(): TreeBuilder
     {
         $treeBuilder = new TreeBuilder();
         $rootNode = $treeBuilder->root('wvision_import_definitions');
@@ -100,17 +100,23 @@ class Configuration implements ConfigurationInterface
                             ->scalarNode('provider_abstract')->defaultValue('/bundles/importdefinitions/pimcore/js/provider/abstractprovider.js')->end()
                             ->scalarNode('provider_csv')->defaultValue('/bundles/importdefinitions/pimcore/js/provider/csv.js')->end()
                             ->scalarNode('provider_sql')->defaultValue('/bundles/importdefinitions/pimcore/js/provider/sql.js')->end()
+                            ->scalarNode('provider_external_sql')->defaultValue('/bundles/importdefinitions/pimcore/js/provider/externalSql.js')->end()
                             ->scalarNode('provider_json')->defaultValue('/bundles/importdefinitions/pimcore/js/provider/json.js')->end()
                             ->scalarNode('provider_xml')->defaultValue('/bundles/importdefinitions/pimcore/js/provider/xml.js')->end()
                             ->scalarNode('interpreter_abstract')->defaultValue('/bundles/importdefinitions/pimcore/js/interpreters/abstract.js')->end()
                             ->scalarNode('interpreter_href')->defaultValue('/bundles/importdefinitions/pimcore/js/interpreters/href.js')->end()
                             ->scalarNode('interpreter_multihref')->defaultValue('/bundles/importdefinitions/pimcore/js/interpreters/multihref.js')->end()
                             ->scalarNode('interpreter_defaultvalue')->defaultValue('/bundles/importdefinitions/pimcore/js/interpreters/defaultvalue.js')->end()
+                            ->scalarNode('interpreter_specificobject')->defaultValue('/bundles/importdefinitions/pimcore/js/interpreters/specificobject.js')->end()
+                            ->scalarNode('interpreter_assetbypath')->defaultValue('/bundles/importdefinitions/pimcore/js/interpreters/assetbypath.js')->end()
                             ->scalarNode('interpreter_asseturl')->defaultValue('/bundles/importdefinitions/pimcore/js/interpreters/asseturl.js')->end()
                             ->scalarNode('interpreter_assetsurl')->defaultValue('/bundles/importdefinitions/pimcore/js/interpreters/assetsurl.js')->end()
                             ->scalarNode('interpreter_quantityvalue')->defaultValue('/bundles/importdefinitions/pimcore/js/interpreters/quantityvalue.js')->end()
                             ->scalarNode('interpreter_nested')->defaultValue('/bundles/importdefinitions/pimcore/js/interpreters/nested.js')->end()
                             ->scalarNode('interpreter_nested_container')->defaultValue('/bundles/importdefinitions/pimcore/js/interpreters/nestedcontainer.js')->end()
+                            ->scalarNode('interpreter_empty')->defaultValue('/bundles/importdefinitions/pimcore/js/interpreters/empty.js')->end()
+                            ->scalarNode('interpreter_expression')->defaultValue('/bundles/importdefinitions/pimcore/js/interpreters/expression.js')->end()
+                            ->scalarNode('interpreter_object_resolver')->defaultValue('/bundles/importdefinitions/pimcore/js/interpreters/objectresolver.js')->end()
                             ->scalarNode('setter_abstract')->defaultValue('/bundles/importdefinitions/pimcore/js/setters/abstract.js')->end()
                             ->scalarNode('setter_fieldcollection')->defaultValue('/bundles/importdefinitions/pimcore/js/setters/fieldcollection.js')->end()
                             ->scalarNode('setter_objectbrick')->defaultValue('/bundles/importdefinitions/pimcore/js/setters/objectbrick.js')->end()

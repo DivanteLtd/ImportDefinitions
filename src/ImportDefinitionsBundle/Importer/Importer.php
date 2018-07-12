@@ -8,13 +8,17 @@
  * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
  * files that are distributed with this source code.
  *
- * @copyright  Copyright (c) 2016-2017 W-Vision (http://www.w-vision.ch)
+ * @copyright  Copyright (c) 2016-2018 w-vision AG (https://www.w-vision.ch)
  * @license    https://github.com/w-vision/ImportDefinitions/blob/master/gpl-3.0.txt GNU General Public License version 3 (GPLv3)
  */
 
 namespace ImportDefinitionsBundle\Importer;
 
 use CoreShop\Component\Registry\ServiceRegistryInterface;
+use ImportDefinitionsBundle\Model\DataSetAwareInterface;
+use ImportDefinitionsBundle\Exception\DoNotSetException;
+use ImportDefinitionsBundle\Runner\SetterRunnerInterface;
+use ImportDefinitionsBundle\Setter\SetterInterface;
 use Pimcore\File;
 use Pimcore\Mail;
 use Pimcore\Model\Document;
@@ -39,52 +43,52 @@ final class Importer implements ImporterInterface
     /**
      * @var ServiceRegistryInterface
      */
-    protected $providerRegistry;
+    private $providerRegistry;
 
     /**
      * @var ServiceRegistryInterface
      */
-    protected $filterRegistry;
+    private $filterRegistry;
 
     /**
      * @var ServiceRegistryInterface
      */
-    protected $runnerRegistry;
+    private $runnerRegistry;
 
     /**
      * @var ServiceRegistryInterface
      */
-    protected $interpreterRegistry;
+    private $interpreterRegistry;
 
     /**
      * @var ServiceRegistryInterface
      */
-    protected $setterRegistry;
+    private $setterRegistry;
 
     /**
      * @var ServiceRegistryInterface
      */
-    protected $cleanerRegistry;
+    private $cleanerRegistry;
 
     /**
      * @var EventDispatcherInterface
      */
-    protected $eventDispatcher;
+    private $eventDispatcher;
 
     /**
      * @var LoggerInterface
      */
-    protected $logger;
+    private $logger;
 
     /**
      * @var array
      */
-    protected $objectIds = [];
+    private $objectIds = [];
 
     /**
      * @var array
      */
-    protected $exceptions = [];
+    private $exceptions = [];
 
     /**
      * Importer constructor.
@@ -120,6 +124,7 @@ final class Importer implements ImporterInterface
 
     /**
      * {@inheritdoc}
+     * @throws \Exception
      */
     public function doImport(DefinitionInterface $definition, $params)
     {
@@ -131,31 +136,33 @@ final class Importer implements ImporterInterface
             Version::disable();
         }
 
-        if ($definition->getFilter()) {
-            $filter = $this->filterRegistry->get($definition->getFilter());
+        $filterType = $definition->getFilter();
+        if ($filterType) {
+            $filter = $this->filterRegistry->get($filterType);
         }
 
         $data = $this->getData($definition, $params);
 
-        if (count($data) > 0) {
-            $this->eventDispatcher->dispatch('import_definition.total', new ImportDefinitionEvent($definition, count($data)));
+        if (\count($data) > 0) {
+            $this->eventDispatcher->dispatch('import_definition.total', new ImportDefinitionEvent($definition, \count($data)));
 
             $this->runImport($definition, $params, $filter, $data);
         }
 
-        if ($definition->getCleaner()) {
-            $cleaner = $this->cleanerRegistry->get($definition->getCleaner());
+        $cleanerType = $definition->getCleaner();
+        if ($cleanerType) {
+            $cleaner = $this->cleanerRegistry->get($cleanerType);
 
-            $this->logger->info(sprintf("Running Cleaner '%s", $definition->getCleaner()));
-            $this->eventDispatcher->dispatch('import_definition.status', new ImportDefinitionEvent($definition, sprintf("Running Cleaner '%s", $type)));
+            $this->logger->info(sprintf('Running Cleaner "%s"', $cleanerType));
+            $this->eventDispatcher->dispatch('import_definition.status', new ImportDefinitionEvent($definition, sprintf('Running Cleaner "%s"', $cleanerType)));
 
             $cleaner->cleanup($definition, $this->objectIds);
 
-            $this->logger->info(sprintf("Finished Cleaner '%s", $definition->getCleaner()));
-            $this->eventDispatcher->dispatch('import_definition.status', new ImportDefinitionEvent($definition, sprintf("Finished Cleaner '%s", $type)));
+            $this->logger->info(sprintf('Finished Cleaner "%s"', $cleanerType));
+            $this->eventDispatcher->dispatch('import_definition.status', new ImportDefinitionEvent($definition, sprintf('Finished Cleaner "%s"', $cleanerType)));
         }
 
-        if (count($this->exceptions) > 0) {
+        if (\count($this->exceptions) > 0) {
             $this->sendDocument($definition, Document::getById($definition->getFailureNotificationDocument()));
         } else {
             $this->sendDocument($definition, Document::getById($definition->getSuccessNotificationDocument()));
@@ -167,18 +174,19 @@ final class Importer implements ImporterInterface
     /**
      * @param DefinitionInterface $definition
      * @param $document
+     * @throws \Exception
      */
-    protected function sendDocument(DefinitionInterface $definition, $document)
+    private function sendDocument(DefinitionInterface $definition, $document)
     {
         if ($document instanceof Document) {
             $params = [
-                "exceptions" => $this->exceptions,
-                "objectIds" => $this->objectIds,
-                "className" => $definition->getClass(),
-                "countObjects" => count($this->objectIds),
-                "countExceptions" => count($this->exceptions),
-                "name" => $definition->getName(),
-                "provider" => $definition->getProvider()
+                'exceptions' => $this->exceptions,
+                'objectIds' => $this->objectIds,
+                'className' => $definition->getClass(),
+                'countObjects' => \count($this->objectIds),
+                'countExceptions' => \count($this->exceptions),
+                'name' => $definition->getName(),
+                'provider' => $definition->getProvider()
             ];
 
             if ($document instanceof Document\Email) {
@@ -187,17 +195,20 @@ final class Importer implements ImporterInterface
                 $mail->setParams($params);
 
                 $mail->send();
-            } else if (is_a($document, "\\Pimcore\\Model\\Document\\Pushover")) {
+            } elseif (is_a($document, "\\Pimcore\\Model\\Document\\Pushover")) {
                 $document->send($params);
             }
         }
     }
 
-    protected function getData(DefinitionInterface $definition, $params)
+    /**
+     * @param DefinitionInterface $definition
+     * @param $params
+     * @return array
+     */
+    private function getData(DefinitionInterface $definition, $params)
     {
-        /**
-         * @var $provider ProviderInterface
-         */
+        /** @var ProviderInterface $provider */
         $provider = $this->providerRegistry->get($definition->getProvider());
 
         return $provider->getData($definition->getConfiguration(), $definition, $params);
@@ -207,62 +218,62 @@ final class Importer implements ImporterInterface
      * @param DefinitionInterface $definition
      * @param $params
      * @param null $filter
-     * @param array $data
+     * @param array $dataSet
      * @throws \Exception
      */
-    protected function runImport(DefinitionInterface $definition, $params, $filter = null, $data = array())
+    private function runImport(DefinitionInterface $definition, $params, $filter = null, array $dataSet = [])
     {
         $count = 0;
         $countToClean = 1000;
 
-        if (is_array($data)) {
-            foreach ($data as $row) {
-                try {
-                    $object = $this->importRow($definition, $row, $params, $filter);
+        foreach ($dataSet as $row) {
+            try {
+                $object = $this->importRow($definition, $row, $dataSet, $params, $filter);
 
-                    if ($object instanceof Concrete) {
-                        $this->objectIds[] = $object->getId();
-                    }
-
-                    if (($count + 1) % $countToClean === 0) {
-                        \Pimcore::collectGarbage();
-                        $this->logger->info("Clean Garbage");
-                        $this->eventDispatcher->dispatch('import_definition.status', new ImportDefinitionEvent($definition, 'Collect Garbage'));
-                    }
-
-                    $count++;
-                } catch (\Exception $ex) {
-                    $this->logger->error($ex);
-
-                    $this->exceptions[] = $ex;
-
-                    $this->eventDispatcher->dispatch('import_definition.status', new ImportDefinitionEvent($definition, "Error: " . $ex->getMessage() . ' ' . $ex->getTraceAsString()));
-
-                    if ($definition->getStopOnException()) {
-                        throw $ex;
-                    }
+                if ($object instanceof Concrete) {
+                    $this->objectIds[] = $object->getId();
                 }
 
-                $this->eventDispatcher->dispatch('import_definition.progress', new ImportDefinitionEvent($definition));
+                if (($count + 1) % $countToClean === 0) {
+                    \Pimcore::collectGarbage();
+                    $this->logger->info('Clean Garbage');
+                    $this->eventDispatcher->dispatch('import_definition.status', new ImportDefinitionEvent($definition, 'Collect Garbage'));
+                }
+
+                $count++;
+            } catch (\Exception $ex) {
+                $this->logger->error($ex);
+
+                $this->exceptions[] = $ex;
+
+                $this->eventDispatcher->dispatch('import_definition.status', new ImportDefinitionEvent($definition, sprintf('Error: %s', $ex->getMessage())));
+
+                if ($definition->getStopOnException()) {
+                    throw $ex;
+                }
             }
+
+            $this->eventDispatcher->dispatch('import_definition.progress', new ImportDefinitionEvent($definition));
         }
     }
 
     /**
      * @param DefinitionInterface $definition
-     * @param $data
+     * @param array $data
+     * @param array $dataSet
      * @param $params
      * @param null $filter
      * @return null|Concrete
+     * @throws \Exception
      */
-    protected function importRow(DefinitionInterface $definition, $data, $params, $filter = null)
+    private function importRow(DefinitionInterface $definition, $data, $dataSet, $params, $filter = null)
     {
         $runner = null;
 
         $object = $this->getObjectForPrimaryKey($definition, $data);
         $object->setOmitMandatoryCheck(true);
 
-        if (!$object->getId()) {
+        if (null !== $object && !$object->getId()) {
             if ($definition->getSkipNewObjects()) {
                 $this->eventDispatcher->dispatch('import_definition.status', new ImportDefinitionEvent($definition, 'Ignoring new Object'));
                 return null;
@@ -275,13 +286,17 @@ final class Importer implements ImporterInterface
         }
 
         if ($filter instanceof FilterInterface) {
+            if ($filter instanceof DataSetAwareInterface) {
+                $filter->setDataSet($dataSet);
+            }
+
             if (!$filter->filter($definition, $data, $object)) {
                 $this->eventDispatcher->dispatch('import_definition.status', new ImportDefinitionEvent($definition, 'Filtered Object'));
                 return null;
             }
         }
 
-        $this->eventDispatcher->dispatch('import_definition.status', new ImportDefinitionEvent($definition, sprintf('Import Object %s', ($object->getId() ? $object->getFullPath() : "new"))));
+        $this->eventDispatcher->dispatch('import_definition.status', new ImportDefinitionEvent($definition, sprintf('Import Object %s', ($object->getId() ? $object->getFullPath() : 'new'))));
         $this->eventDispatcher->dispatch('import_definition.object.start', new ImportDefinitionEvent($definition, $object));
 
         if ($definition->getRunner()) {
@@ -290,10 +305,14 @@ final class Importer implements ImporterInterface
 
 
         if ($runner instanceof RunnerInterface) {
+            if ($runner instanceof DataSetAwareInterface) {
+                $runner->setDataSet($dataSet);
+            }
+
             $runner->preRun($object, $data, $definition, $params);
         }
 
-        $this->logger->info("Imported Object: " . $object->getRealFullPath());
+        $this->logger->info(sprintf('Imported Object: %s', $object->getRealFullPath()));
 
         foreach ($definition->getMapping() as $mapItem) {
             $value = null;
@@ -302,16 +321,23 @@ final class Importer implements ImporterInterface
                 $value = $data[$mapItem->getFromColumn()];
             }
 
-            $this->setObjectValue($object, $mapItem, $value, $data, $definition, $params);
+            $this->setObjectValue($object, $mapItem, $value, $data, $dataSet, $definition, $params, $runner);
         }
 
         $object->setUserModification(0); //Set User to "system"
+
+        $object->setOmitMandatoryCheck($definition->getOmitMandatoryCheck());
+
         $object->save();
 
         $this->eventDispatcher->dispatch('import_definition.status', new ImportDefinitionEvent($definition, sprintf('Imported Object %s', $object->getFullPath())));
         $this->eventDispatcher->dispatch('import_definition.object.finished', new ImportDefinitionEvent($definition, $object));
 
         if ($runner instanceof RunnerInterface) {
+            if ($runner instanceof DataSetAwareInterface) {
+                $runner->setDataSet($dataSet);
+            }
+
             $runner->postRun($object, $data, $definition, $params);
         }
 
@@ -322,27 +348,58 @@ final class Importer implements ImporterInterface
      * @param Concrete $object
      * @param Mapping $map
      * @param $value
-     * @param $data
+     * @param array $data
+     * @param array $dataSet
      * @param DefinitionInterface $definition
      * @param $params
-     * @throws \Exception
+     * @param RunnerInterface $runner
      */
-    protected function setObjectValue(Concrete $object, Mapping $map, $value, $data, DefinitionInterface $definition, $params)
+    private function setObjectValue(Concrete $object, Mapping $map, $value, $data, $dataSet, DefinitionInterface $definition, $params, RunnerInterface $runner = null)
     {
         if ($map->getInterpreter()) {
-            $interpreter = $this->interpreterRegistry->get($map->getInterpreter());
-            $value = $interpreter->interpret($object, $value, $map, $data, $definition, $params, $map->getInterpreterConfig());
+            try {
+                $interpreter = $this->interpreterRegistry->get($map->getInterpreter());
+
+                if ($interpreter instanceof DataSetAwareInterface) {
+                    $interpreter->setDataSet($dataSet);
+                }
+
+                $value = $interpreter->interpret($object, $value, $map, $data, $definition, $params, $map->getInterpreterConfig());
+            }
+            catch (DoNotSetException $ex) {
+                return;
+            }
+
         }
 
-        if ($map->getToColumn() === "type") {
-            if ($map->getSetter() !== "object_type") {
-                throw new \Exception("Type has to be used with ObjectType Setter!");
+        if ($map->getToColumn() === 'o_type' && $map->getSetter() !== 'object_type') {
+            throw new \InvalidArgumentException('Type has to be used with ObjectType Setter!');
+        }
+
+        $shouldSetField = true;
+
+        if ($runner instanceof SetterRunnerInterface) {
+            if ($runner instanceof DataSetAwareInterface) {
+                $runner->setDataSet($dataSet);
             }
+
+            $shouldSetField = $runner->shouldSetField($object, $map, $value, $data, $definition, $params);
+        }
+
+        if (!$shouldSetField) {
+            return;
         }
 
         if ($map->getSetter()) {
             $setter = $this->setterRegistry->get($map->getSetter());
-            $setter->set($object, $value, $map, $data);
+
+            if ($setter instanceof SetterInterface) {
+                if ($setter instanceof DataSetAwareInterface) {
+                    $setter->setDataSet($dataSet);
+                }
+
+                $setter->set($object, $value, $map, $data);
+            }
         } else {
             $object->setValue($map->getToColumn(), $value);
         }
@@ -350,18 +407,18 @@ final class Importer implements ImporterInterface
 
     /**
      * @param DefinitionInterface $definition
-     * @param $data
+     * @param array $data
      * @return null|Concrete
      * @throws \Exception
      */
-    protected function getObjectForPrimaryKey(DefinitionInterface $definition, $data)
+    private function getObjectForPrimaryKey(DefinitionInterface $definition, $data)
     {
         $class = $definition->getClass();
         $classDefinition = ClassDefinition::getByName($class);
         $obj = null;
 
         if (!$classDefinition instanceof ClassDefinition) {
-            throw new \Exception("Class not found $class");
+            throw new \InvalidArgumentException(sprintf('Class not found %s', $class));
         }
 
         $classObject = '\Pimcore\Model\DataObject\\' . ucfirst($class);
@@ -380,26 +437,26 @@ final class Importer implements ImporterInterface
                 }
             }
 
-            if (count($condition) === 0) {
-                throw new \Exception("No primary identifier defined!");
+            if (\count($condition) === 0) {
+                throw new \InvalidArgumentException('No primary identifier defined!');
             }
 
             $list->setUnpublished(true);
-            $list->setCondition(implode(" AND ", $condition), $conditionValues);
+            $list->setCondition(implode(' AND ', $condition), $conditionValues);
             $list->setObjectTypes([Concrete::OBJECT_TYPE_VARIANT, Concrete::OBJECT_TYPE_OBJECT, Concrete::OBJECT_TYPE_FOLDER]);
             $list->load();
             $objectData = $list->getObjects();
 
-            if (count($objectData) === 1) {
+            if (\count($objectData) === 1) {
                 $obj = $objectData[0];
             }
 
-            if (!isset($obj)) {
+            if (null === $obj) {
                 $obj = new $classObject();
             }
 
             if ($obj instanceof AbstractObject) {
-                $key = File::getValidFilename($this->createKey($definition, $data));
+                $key = Service::getValidKey($this->createKey($definition, $data), 'object');
 
                 if ($definition->getRelocateExistingObjects()) {
                     $obj->setParent(Service::createFolderByPath($this->createPath($definition, $data)));
@@ -411,15 +468,15 @@ final class Importer implements ImporterInterface
                 }
 
                 if ($definition->getRenameExistingObjects() || !$obj->getId()) {
-                    if ($definition->getKey() && $key) {
+                    if ($key && $definition->getKey()) {
                         $obj->setKey($key);
                     } else {
-                        $obj->setKey(File::getValidFilename(implode("-", $conditionValues)));
+                        $obj->setKey(File::getValidFilename(implode('-', $conditionValues)));
                     }
                 }
 
                 if (!$obj->getKey()) {
-                    throw new \Exception('Not Key set, please check your import-data');
+                    throw new \InvalidArgumentException('No key set, please check your import-data');
                 }
 
                 $obj->setKey(Service::getUniqueKey($obj));
@@ -427,8 +484,8 @@ final class Importer implements ImporterInterface
                 return $obj;
             }
 
-            if (count($objectData) > 1) {
-                throw new \Exception("Object with the same primary key was found multiple times");
+            if (\count($objectData) > 1) {
+                throw new \InvalidArgumentException('Object with the same primary key was found multiple times');
             }
         }
 
@@ -437,10 +494,10 @@ final class Importer implements ImporterInterface
 
     /**
      * @param DefinitionInterface $definition
-     * @param $data
+     * @param array $data
      * @return string
      */
-    protected function createPath(DefinitionInterface $definition, $data)
+    private function createPath(DefinitionInterface $definition, $data)
     {
         $placeholderHelper = new Placeholder();
         return $placeholderHelper->replacePlaceholders($definition->getObjectPath(), $data);
@@ -448,10 +505,10 @@ final class Importer implements ImporterInterface
 
     /**
      * @param DefinitionInterface $definition
-     * @param $data
+     * @param array $data
      * @return string
      */
-    protected function createKey(DefinitionInterface $definition, $data)
+    private function createKey(DefinitionInterface $definition, $data)
     {
         $placeholderHelper = new Placeholder();
         return $placeholderHelper->replacePlaceholders($definition->getKey(), $data);

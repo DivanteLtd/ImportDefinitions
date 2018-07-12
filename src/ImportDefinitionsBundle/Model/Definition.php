@@ -8,15 +8,13 @@
  * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
  * files that are distributed with this source code.
  *
- * @copyright  Copyright (c) 2016-2017 W-Vision (http://www.w-vision.ch)
+ * @copyright  Copyright (c) 2016-2018 w-vision AG (https://www.w-vision.ch)
  * @license    https://github.com/w-vision/ImportDefinitions/blob/master/gpl-3.0.txt GNU General Public License version 3 (GPLv3)
  */
 
 namespace ImportDefinitionsBundle\Model;
 
-use CoreShop\Component\Resource\Model\ResourceInterface;
 use Pimcore\Model\AbstractModel;
-
 
 class Definition extends AbstractModel implements DefinitionInterface
 {
@@ -31,7 +29,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     public $name;
 
     /**
-     * @var string<
+     * @var string
      */
     public $provider;
 
@@ -116,6 +114,11 @@ class Definition extends AbstractModel implements DefinitionInterface
     public $stopOnException;
 
     /**
+     * @var boolean
+     */
+    public $omitMandatoryCheck;
+
+    /**
      * @var int
      */
     public $failureNotificationDocument;
@@ -126,23 +129,22 @@ class Definition extends AbstractModel implements DefinitionInterface
     public $successNotificationDocument;
 
     /**
-     * Get By Id.
+     * Get By Id
      *
      * @param int $id
-     *
      * @return Definition
      */
     public static function getById($id)
     {
         $definitionEntry = new self();
-        $definitionEntry->setId(intval($id));
+        $definitionEntry->setId((int) $id);
         $definitionEntry->getDao()->getById();
 
         return $definitionEntry;
     }
 
     /**
-     * @return int
+     * {@inheritdoc}
      */
     public function getId()
     {
@@ -150,7 +152,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @param int $id
+     * {@inheritdoc}
      */
     public function setId($id)
     {
@@ -158,7 +160,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @return string
+     * {@inheritdoc}
      */
     public function getProvider()
     {
@@ -166,7 +168,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @param string $provider
+     * {@inheritdoc}
      */
     public function setProvider($provider)
     {
@@ -174,7 +176,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @return array
+     * {@inheritdoc}
      */
     public function getConfiguration()
     {
@@ -182,7 +184,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @param array $configuration
+     * {@inheritdoc}
      */
     public function setConfiguration($configuration)
     {
@@ -190,7 +192,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @return int
+     * {@inheritdoc}
      */
     public function getClass()
     {
@@ -198,7 +200,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @param int $class
+     * {@inheritdoc}
      */
     public function setClass($class)
     {
@@ -206,7 +208,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @return string
+     * {@inheritdoc}
      */
     public function getName()
     {
@@ -214,7 +216,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @param string $name
+     * {@inheritdoc}
      */
     public function setName($name)
     {
@@ -222,7 +224,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @return Mapping[]
+     * {@inheritdoc}
      */
     public function getMapping()
     {
@@ -230,7 +232,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @param Mapping[] $mapping
+     * {@inheritdoc}
      */
     public function setMapping($mapping)
     {
@@ -238,7 +240,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @return int
+     * {@inheritdoc}
      */
     public function getCreationDate()
     {
@@ -246,7 +248,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @param int $creationDate
+     * {@inheritdoc}
      */
     public function setCreationDate($creationDate)
     {
@@ -254,7 +256,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @return int
+     * {@inheritdoc}
      */
     public function getModificationDate()
     {
@@ -262,7 +264,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @param int $modificationDate
+     * {@inheritdoc}
      */
     public function setModificationDate($modificationDate)
     {
@@ -270,7 +272,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @return string
+     * {@inheritdoc}
      */
     public function getObjectPath()
     {
@@ -278,7 +280,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @param string $objectPath
+     * {@inheritdoc}
      */
     public function setObjectPath($objectPath)
     {
@@ -286,7 +288,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @return string
+     * {@inheritdoc}
      */
     public function getCleaner()
     {
@@ -294,7 +296,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @param string $cleaner
+     * {@inheritdoc}
      */
     public function setCleaner($cleaner)
     {
@@ -302,7 +304,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @return string
+     * {@inheritdoc}
      */
     public function getKey()
     {
@@ -310,7 +312,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @param string $key
+     * {@inheritdoc}
      */
     public function setKey($key)
     {
@@ -318,7 +320,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @return string
+     * {@inheritdoc}
      */
     public function getFilter()
     {
@@ -326,7 +328,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @param string $filter
+     * {@inheritdoc}
      */
     public function setFilter($filter)
     {
@@ -334,7 +336,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @return boolean
+     * {@inheritdoc}
      */
     public function getRenameExistingObjects()
     {
@@ -342,7 +344,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @param boolean $renameExistingObjects
+     * {@inheritdoc}
      */
     public function setRenameExistingObjects($renameExistingObjects)
     {
@@ -350,7 +352,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @return boolean
+     * {@inheritdoc}
      */
     public function getRelocateExistingObjects()
     {
@@ -358,7 +360,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @param boolean $relocateExistingObjects
+     * {@inheritdoc}
      */
     public function setRelocateExistingObjects($relocateExistingObjects)
     {
@@ -366,7 +368,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @return string
+     * {@inheritdoc}
      */
     public function getRunner()
     {
@@ -374,7 +376,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @param string $runner
+     * {@inheritdoc}
      */
     public function setRunner($runner)
     {
@@ -382,7 +384,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @return boolean
+     * {@inheritdoc}
      */
     public function getCreateVersion()
     {
@@ -390,7 +392,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @param boolean $createVersion
+     * {@inheritdoc}
      */
     public function setCreateVersion($createVersion)
     {
@@ -398,7 +400,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @return boolean
+     * {@inheritdoc}
      */
     public function getStopOnException()
     {
@@ -406,7 +408,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @param boolean $stopOnException
+     * {@inheritdoc}
      */
     public function setStopOnException($stopOnException)
     {
@@ -414,7 +416,23 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @return int
+     * {@inheritdoc}
+     */
+    public function getOmitMandatoryCheck()
+    {
+        return $this->omitMandatoryCheck;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setOmitMandatoryCheck($omitMandatoryCheck)
+    {
+        $this->omitMandatoryCheck = $omitMandatoryCheck;
+    }
+
+    /**
+     * {@inheritdoc}
      */
     public function getFailureNotificationDocument()
     {
@@ -422,7 +440,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @param int $failureNotificationDocument
+     * {@inheritdoc}
      */
     public function setFailureNotificationDocument($failureNotificationDocument)
     {
@@ -430,7 +448,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @return int
+     * {@inheritdoc}
      */
     public function getSuccessNotificationDocument()
     {
@@ -438,7 +456,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @param int $successNotificationDocument
+     * {@inheritdoc}
      */
     public function setSuccessNotificationDocument($successNotificationDocument)
     {
@@ -446,7 +464,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @return bool
+     * {@inheritdoc}
      */
     public function getSkipNewObjects()
     {
@@ -454,7 +472,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @param bool $skipNewObjects
+     * {@inheritdoc}
      */
     public function setSkipNewObjects($skipNewObjects)
     {
@@ -462,7 +480,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @return bool
+     * {@inheritdoc}
      */
     public function getSkipExistingObjects()
     {
@@ -470,7 +488,7 @@ class Definition extends AbstractModel implements DefinitionInterface
     }
 
     /**
-     * @param bool $skipExistingObjects
+     * {@inheritdoc}
      */
     public function setSkipExistingObjects($skipExistingObjects)
     {

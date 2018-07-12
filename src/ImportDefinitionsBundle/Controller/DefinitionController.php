@@ -8,7 +8,7 @@
  * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
  * files that are distributed with this source code.
  *
- * @copyright  Copyright (c) 2016-2017 W-Vision (http://www.w-vision.ch)
+ * @copyright  Copyright (c) 2016-2018 w-vision AG (https://www.w-vision.ch)
  * @license    https://github.com/w-vision/ImportDefinitions/blob/master/gpl-3.0.txt GNU General Public License version 3 (GPLv3)
  */
 
@@ -18,7 +18,6 @@ use CoreShop\Bundle\ResourceBundle\Controller\ResourceController;
 use ImportDefinitionsBundle\Model\DefinitionInterface;
 use ImportDefinitionsBundle\Model\Mapping\FromColumn;
 use ImportDefinitionsBundle\Model\Mapping\ToColumn;
-use Pimcore\Bundle\AdminBundle\HttpFoundation\JsonResponse;
 use Pimcore\Model\DataObject;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
@@ -28,43 +27,9 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 class DefinitionController extends ResourceController
 {
     /**
-     * @param Request $request
-     *
-     * @return JsonResponse
-     */
-    public function saveAction(Request $request)
-    {
-        $this->isGrantedOr403();
-
-        $resource = $this->findOr404($request->get('id'));
-        //$resource->setMapping([]);
-
-        $form = $this->resourceFormFactory->create($this->metadata, $resource);
-        $handledForm = $form->handleRequest($request);
-
-        if (in_array($request->getMethod(), ['POST', 'PUT', 'PATCH'], true) && $handledForm->isValid()) {
-            $resource = $form->getData();
-
-            $this->eventDispatcher->dispatchPreEvent('save', $this->metadata, $resource, $request);
-
-            $this->manager->persist($resource);
-            $this->manager->flush();
-
-            $this->eventDispatcher->dispatchPostEvent('save', $this->metadata, $resource, $request);
-
-            return $this->viewHandler->handle(['data' => $resource, 'success' => true], ['group' => 'Detailed']);
-        }
-
-        $errors = $this->formErrorSerializer->serializeErrorFromHandledForm($handledForm);
-
-        return $this->viewHandler->handle(['success' => false, 'message' => implode(PHP_EOL, $errors)]);
-    }
-
-    /**
-     * @param Request $request
      * @return mixed|\Symfony\Component\HttpFoundation\JsonResponse
      */
-    public function getConfigAction(Request $request)
+    public function getConfigAction()
     {
         $providers = $this->getConfigProviders();
         $interpreters = $this->getConfigInterpreters();
@@ -83,9 +48,13 @@ class DefinitionController extends ResourceController
         ]);
     }
 
+    /**
+     * @param Request $request
+     * @return mixed
+     */
     public function testDataAction(Request $request)
     {
-        $id = $request->get("id");
+        $id = $request->get('id');
         $definition = $this->repository->find($id);
 
         if ($definition instanceof DefinitionInterface) {
@@ -104,6 +73,7 @@ class DefinitionController extends ResourceController
     /**
      * @param Request $request
      * @return mixed|\Symfony\Component\HttpFoundation\JsonResponse
+     * @throws \Exception
      */
     public function getColumnsAction(Request $request)
     {
@@ -149,7 +119,7 @@ class DefinitionController extends ResourceController
             foreach ($toColumns as $classToColumn) {
                 $found = false;
 
-                if (is_array($mappings)) {
+                if (\is_array($mappings)) {
                     foreach ($mappings as $index => $mapping) {
                         if ($mapping->getToColumn() === $classToColumn->getIdentifier()) {
                             $found = true;
@@ -202,9 +172,9 @@ class DefinitionController extends ResourceController
      * @param Request $request
      * @return Response
      */
-    public function exportAction(Request $request)
+    public function exportAction(Request $request): Response
     {
-        $id = intval($request->get("id"));
+        $id = (int) $request->get('id');
 
         if ($id) {
             $definition = $this->repository->find($id);
@@ -212,16 +182,14 @@ class DefinitionController extends ResourceController
             if ($definition instanceof DefinitionInterface) {
 
                 $name = $definition->getName();
-                unset($definition->id);
-                unset($definition->creationDate);
-                unset($definition->modificationDate);
+                unset($definition->id, $definition->creationDate, $definition->modificationDate);
 
                 $response = new Response();
                 $response->headers->set('Content-Type', 'application/json');
-                $response->headers->set('Content-Disposition', 'attachment; filename="' . sprintf('import-definition-%s.json', $name) . '"');
-                $response->headers->set('Pragma', "no-cache");
-                $response->headers->set('Expires', "0");
-                $response->headers->set('Content-Transfer-Encoding', "binary");
+                $response->headers->set('Content-Disposition', sprintf('attachment; filename="import-definition-%s.json"', $name));
+                $response->headers->set('Pragma', 'no-cache');
+                $response->headers->set('Expires', '0');
+                $response->headers->set('Content-Transfer-Encoding', 'binary');
 
                 $response->setContent(json_encode($definition));
 
@@ -238,10 +206,10 @@ class DefinitionController extends ResourceController
      */
     public function importAction(Request $request)
     {
-        $id = intval($request->get("id"));
+        $id = (int) $request->get('id');
         $definition = $this->repository->find($id);
 
-        if ($id && $request->files->has('Filedata') && $definition instanceof DefinitionInterface) {
+        if ($id && $definition instanceof DefinitionInterface && $request->files->has('Filedata')) {
             $uploadedFile = $request->files->get('Filedata');
 
             if ($uploadedFile instanceof UploadedFile) {
@@ -267,18 +235,18 @@ class DefinitionController extends ResourceController
 
     /**
      * @param DataObject\ClassDefinition $class
-     *
      * @return array
+     * @throws \Exception
      */
-    public function getClassDefinitionForFieldSelection(DataObject\ClassDefinition $class)
+    public function getClassDefinitionForFieldSelection(DataObject\ClassDefinition $class): array
     {
         $fields = $class->getFieldDefinitions();
 
         $systemColumns = [
-            "published", "key", "parent", "type"
+            'o_published', 'o_key', 'o_parentId', 'o_parent', 'o_type'
         ];
 
-        $result = array();
+        $result = [];
 
         $activatedLanguages = \Pimcore\Tool::getValidLanguages();
 
@@ -286,10 +254,10 @@ class DefinitionController extends ResourceController
             $toColumn = new ToColumn();
 
             $toColumn->setLabel($sysColumn);
-            $toColumn->setFieldtype("input");
+            $toColumn->setFieldtype('input');
             $toColumn->setIdentifier($sysColumn);
-            $toColumn->setType("systemColumn");
-            $toColumn->setGroup("systemColumn");
+            $toColumn->setType('systemColumn');
+            $toColumn->setGroup('systemColumn');
 
             $result[] = $toColumn;
         }
@@ -304,14 +272,10 @@ class DefinitionController extends ResourceController
 
                         $localizedField->setGroup('localizedfield.' . strtolower($language));
                         $localizedField->setType('localizedfield.' . $language);
-                        $localizedField->setIdentifier($localizedField->getIdentifier() . "~" . $language);
+                        $localizedField->setIdentifier(sprintf('%s~%s', $localizedField->getIdentifier(), $language));
                         $localizedField->setSetter('localizedfield');
-                        $localizedField->setConfig([
-                            "language" => $language
-                        ]);
-                        $localizedField->setSetterConfig(array(
-                            "language" => $language
-                        ));
+                        $localizedField->setConfig(['language' => $language]);
+                        $localizedField->setSetterConfig(['language' => $language]);
                         $result[] = $localizedField;
                     }
                 }
@@ -332,12 +296,10 @@ class DefinitionController extends ResourceController
                                     $resultField = $this->getFieldConfiguration($brickField);
 
                                     $resultField->setGroup('objectbrick.' . $key);
-                                    $resultField->setType("objectbrick");
-                                    $resultField->setIdentifier('objectbrick~' . $field->getName() . '~' . $key . '~' . $resultField->getIdentifier());
+                                    $resultField->setType('objectbrick');
+                                    $resultField->setIdentifier(sprintf('objectbrick~%s~%s~%s', $field->getName(), $key, $resultField->getIdentifier()));
                                     $resultField->setSetter('objectbrick');
-                                    $resultField->setConfig(array(
-                                        "class" => $key
-                                    ));
+                                    $resultField->setConfig(['class' => $key]);
                                     $result[] = $resultField;
                                 }
 
@@ -356,12 +318,10 @@ class DefinitionController extends ResourceController
                         $resultField = $this->getFieldConfiguration($fieldcollectionField);
 
                         $resultField->setGroup('fieldcollection.' . $type);
-                        $resultField->setType("fieldcollection");
-                        $resultField->setIdentifier("fieldcollection~" . $field->getName() . "~" . $type . "~" . $resultField->getIdentifier());
+                        $resultField->setType('fieldcollection');
+                        $resultField->setIdentifier(sprintf('fieldcollection~%s~%s~%s', $field->getName(), $type, $resultField->getIdentifier()));
                         $resultField->setSetter('fieldcollection');
-                        $resultField->setConfig(array(
-                            "class" => $type
-                        ));
+                        $resultField->setConfig(['class' => $type]);
 
                         $result[] = $resultField;
                     }
@@ -388,8 +348,6 @@ class DefinitionController extends ResourceController
                 $groupConfigList = $list->getList();
 
                 foreach ($groupConfigList as $config) {
-                    $key = $config->getId() . ($config->getName() ? $config->getName() : 'EMPTY');
-
                     foreach ($config->getRelations() as $relation) {
                         if ($relation instanceof DataObject\Classificationstore\KeyGroupRelation) {
                             $keyId = $relation->getKeyId();
@@ -398,14 +356,14 @@ class DefinitionController extends ResourceController
 
                             $toColumn = new ToColumn();
                             $toColumn->setGroup('classificationstore');
-                            $toColumn->setIdentifier('classificationstore~' . $field->getName() . '~' . $keyConfig->getId() . '~' . $config->getId());
-                            $toColumn->setType("classificationstore");
+                            $toColumn->setIdentifier(sprintf('classificationstore~%s~%s~%s', $field->getName(), $keyConfig->getId(), $config->getId()));
+                            $toColumn->setType('classificationstore');
                             $toColumn->setFieldtype($keyConfig->getType());
                             $toColumn->setSetter('classificationstore');
-                            $toColumn->setConfig(array(
-                                "keyId" => $keyConfig->getId(),
-                                "groupId" => $config->getId(),
-                            ));
+                            $toColumn->setConfig([
+                                'keyId' => $keyConfig->getId(),
+                                'groupId' => $config->getId(),
+                            ]);
                             $toColumn->setLabel($keyConfig->getName());
 
                             $result[] = $toColumn;
@@ -424,7 +382,7 @@ class DefinitionController extends ResourceController
      * @param DataObject\ClassDefinition\Data $field
      * @return ToColumn
      */
-    protected function getFieldConfiguration(DataObject\ClassDefinition\Data $field)
+    protected function getFieldConfiguration(DataObject\ClassDefinition\Data $field): ToColumn
     {
         $toColumn = new ToColumn();
 
@@ -439,7 +397,7 @@ class DefinitionController extends ResourceController
     /**
      * @return array
      */
-    protected function getConfigProviders()
+    protected function getConfigProviders(): array
     {
         return $this->getParameter('import_definition.providers');
     }
@@ -447,7 +405,7 @@ class DefinitionController extends ResourceController
     /**
      * @return array
      */
-    protected function getConfigInterpreters()
+    protected function getConfigInterpreters(): array
     {
         return $this->getParameter('import_definition.interpreters');
     }
@@ -455,7 +413,7 @@ class DefinitionController extends ResourceController
     /**
      * @return array
      */
-    protected function getConfigCleaners()
+    protected function getConfigCleaners(): array
     {
         return $this->getParameter('import_definition.cleaners');
     }
@@ -463,7 +421,7 @@ class DefinitionController extends ResourceController
     /**
      * @return array
      */
-    protected function getConfigSetters()
+    protected function getConfigSetters(): array
     {
         return $this->getParameter('import_definition.setters');
     }
@@ -471,7 +429,7 @@ class DefinitionController extends ResourceController
     /**
      * @return array
      */
-    protected function getConfigFilters()
+    protected function getConfigFilters(): array
     {
         return $this->getParameter('import_definition.filters');
     }
@@ -479,7 +437,7 @@ class DefinitionController extends ResourceController
     /**
      * @return array
      */
-    protected function getConfigRunners()
+    protected function getConfigRunners(): array
     {
         return $this->getParameter('import_definition.runners');
     }

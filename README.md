@@ -17,25 +17,8 @@ Import Definitions allows you to define your Object Import using a nice GUI and 
 
  * Since Import-Definitions depends on CoreShops ResourceBundle, and the ResourceBundle only exists in DEV yet, you need to set your "minimum-stability" to "dev" in your composer.json
  * Install via composer ```composer require w-vision/import-definitions:^2.0-dev```
- * Load needed Bundles:
-    ```php
-    <?php
-
-    // app/AppKernel.php
-    public function registerBundlesToCollection(BundleCollection $collection)
-    {
-        $collection->addBundles(array(
-            new \JMS\SerializerBundle\JMSSerializerBundle(),
-            new \CoreShop\Bundle\ResourceBundle\CoreShopResourceBundle(),
-            new \FOS\RestBundle\FOSRestBundle(),
-            new \Doctrine\Bundle\DoctrineCacheBundle\DoctrineCacheBundle(),
-            new \Stof\DoctrineExtensionsBundle\StofDoctrineExtensionsBundle()
-        ), 120);
-    }
-    ```
- * Enable Bundle by running ```bin/console pimcore:bundle:enable ImportDefinitionsBundle```
- * Clear Cache by running ```bin/console cache:clear --no-warmup```
- * Install Bundle by running ```bin/console pimcore:bundle:install ImportDefinitionsBundle```
+ * Enable via command-line (or inside the pimcore extension manager): ```bin/console pimcore:bundle:enable ImportDefinitionsBundle```
+ * Install via command-line (or inside the pimcore extension manager): ```bin/console pimcore:bundle:install ImportDefinitionsBundle```
  * Reload Pimcore
  * Open Settings -> Import Definitions
 
@@ -82,12 +65,14 @@ To prepare data before it goes to the Objects-Setter Method, there are these "In
 
  - AssetsUrl -> Downloads an Asset from an Url and saves it to a multihref field
  - AssetUrl -> Downloads an Asset from an Url and saves it to a href field
+ - AssetByPath -> Gets Asset object by path and saves it to a the field
  - DefaultValue -> Saves a Static-Value (definied in the UI) to the field
  - Checkbox -> transform "yes" and "no" into a Boolean Value
  - Href -> solves the connection from an ID to an actual Pimcore Object
  - MultiHref -> same as href, but for multihref fields
  - Quantity Value -> Interprets the data as Pimcore quantity value
  - Nested -> Allows you to nest/chain interpreters and pass results from one to another
+ - SpecificObject -> Saves predefined object (in the UI) to the field
 
 This probably doesn't satisfy your needs. But you can also write your own Interpreters.
 Todo that, you need to implement the interface ```ImportDefinitionsBundle\Interpreter\InterpreterInterface``` and create a service
@@ -254,7 +239,7 @@ bin/console import-definitions:import -d 1 -p "{\"file\":\"test.json\"}"
 ## License
 [w-vision AG](https://www.w-vision.ch), Sandgruebestrasse 4, 6210 Sursee, Switzerland  
 https://www.w-vision.ch, support@w-vision.ch  
-Copyright © 2017 w-vision AG. All rights reserved.
+Copyright © 2018 w-vision AG. All rights reserved.
 
 For licensing details please visit [LICENSE.md](LICENSE.md) 
 
