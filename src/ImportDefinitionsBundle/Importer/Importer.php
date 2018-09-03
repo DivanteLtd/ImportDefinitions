@@ -21,6 +21,7 @@ use ImportDefinitionsBundle\Runner\SetterRunnerInterface;
 use ImportDefinitionsBundle\Setter\SetterInterface;
 use Pimcore\File;
 use Pimcore\Mail;
+use Pimcore\Model\DataObject\Product;
 use Pimcore\Model\Document;
 use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\DataObject\ClassDefinition;
@@ -463,8 +464,12 @@ final class Importer implements ImporterInterface
                 }
 
                 if(!$obj->getId()) {
-                    $obj->setParent(Service::createFolderByPath("/Purgatory/CSV/".$definition->getName()));
-                    $obj->setProperty("targetFolder", "object", Service::createFolderByPath($this->createPath($definition, $data)));
+                    if ($obj instanceof Product) {
+                        $obj->setParent(Service::createFolderByPath("/Purgatory/CSV/".$definition->getName()));
+                        $obj->setProperty("targetFolder", "object", Service::createFolderByPath($this->createPath($definition, $data)));
+                    } else {
+                        $obj->setParent(Service::createFolderByPath($this->createPath($definition, $data)));
+                    }
                 }
 
                 if ($definition->getRenameExistingObjects() || !$obj->getId()) {
