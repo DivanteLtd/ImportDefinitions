@@ -237,4 +237,14 @@ interface DefinitionInterface extends ResourceInterface
      * @param bool $skipExistingObjects
      */
     public function setSkipExistingObjects($skipExistingObjects);
+
+    /**
+     * @return mixed
+     */
+    public function getFindExistingObjectsInObjectPath();
+
+    /**
+     * @param bool $findExistingObjectsInObjectPath
+     */
+    public function setFindExistingObjectsInObjectPath($findExistingObjectsInObjectPath);
 }
