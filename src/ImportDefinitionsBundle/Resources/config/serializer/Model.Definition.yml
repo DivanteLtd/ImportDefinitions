@@ -51,6 +51,10 @@ ImportDefinitionsBundle\Model\Definition:
       expose: true
       type: boolean
       groups: [Detailed]
+    findExistingObjectsInObjectPath:
+      expose: true
+      type: boolean
+      groups: [Detailed]
     skipNewObjects:
       expose: true
       type: string

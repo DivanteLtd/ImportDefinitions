@@ -207,6 +207,12 @@ pimcore.plugin.importdefinitions.definition.item = Class.create(coreshop.resourc
                     }
                 },
                 {
+                    fieldLabel: t('importdefinitions_find_existing_objects_in_object_path'),
+                    xtype: 'checkbox',
+                    name: 'findExistingObjectsInObjectPath',
+                    checked: this.data.findExistingObjectsInObjectPath
+                },
+                {
                     fieldLabel: t('importdefinitions_relocate_existing_objects'),
                     xtype: 'checkbox',
                     name: 'relocateExistingObjects',

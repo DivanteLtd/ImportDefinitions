@@ -444,6 +444,11 @@ final class Importer implements ImporterInterface
 
             $list->setUnpublished(true);
             $list->setCondition(implode(' AND ', $condition), $conditionValues);
+
+            if ($definition->getFindExistingObjectsInObjectPath() && $definition->getObjectPath()) {
+                $list->addConditionParam('o_path = ?', $definition->getObjectPath() . '/');
+            }
+
             $list->setObjectTypes([Concrete::OBJECT_TYPE_VARIANT, Concrete::OBJECT_TYPE_OBJECT, Concrete::OBJECT_TYPE_FOLDER]);
             $list->load();
             $objectData = $list->getObjects();

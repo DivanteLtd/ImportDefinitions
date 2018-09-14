@@ -56,6 +56,7 @@ final class DefinitionType extends AbstractResourceType
             ->add('objectPath', TextType::class)
             ->add('key', TextType::class)
             ->add('renameExistingObjects', CheckboxType::class)
+            ->add('findExistingObjectsInObjectPath', CheckboxType::class)
             ->add('relocateExistingObjects', CheckboxType::class)
             ->add('createVersion', CheckboxType::class)
             ->add('stopOnException', CheckboxType::class)

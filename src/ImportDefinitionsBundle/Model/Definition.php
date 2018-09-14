@@ -86,6 +86,11 @@ class Definition extends AbstractModel implements DefinitionInterface
     /**
      * @var bool
      */
+    public $findExistingObjectsInObjectPath = false;
+
+    /**
+     * @var bool
+     */
     public $relocateExistingObjects;
 
     /**
@@ -493,5 +498,21 @@ class Definition extends AbstractModel implements DefinitionInterface
     public function setSkipExistingObjects($skipExistingObjects)
     {
         $this->skipExistingObjects = $skipExistingObjects;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getFindExistingObjectsInObjectPath()
+    {
+        return $this->findExistingObjectsInObjectPath;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setFindExistingObjectsInObjectPath($findExistingObjectsInObjectPath)
+    {
+        $this->findExistingObjectsInObjectPath = $findExistingObjectsInObjectPath;
     }
 }
