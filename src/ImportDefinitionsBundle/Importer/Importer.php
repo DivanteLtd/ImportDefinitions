@@ -40,11 +40,16 @@ use Pimcore\Model\DataObject\Service;
 use Pimcore\Model\Document;
 use Pimcore\Model\Version;
 use Pimcore\Placeholder;
+use ProcessManagerBundle\Model\ProcessInterface;
+use ProcessManagerBundle\Repository\ProcessRepository;
+use ProcessManagerBundle\Repository\ProcessRepositoryInterface;
 use Psr\Log\LoggerInterface;
 use Webmozart\Assert\Assert;
 
 final class Importer implements ImporterInterface
 {
+    private const CHECK_IF_STOPPED_COUNT = 10;
+
     /**
      * @var ServiceRegistryInterface
      */
@@ -91,6 +96,11 @@ final class Importer implements ImporterInterface
     private $logger;
 
     /**
+     * @var string
+     */
+    private $processHash;
+
+    /**
      * Importer constructor.
      * @param ServiceRegistryInterface $providerRegistry
      * @param ServiceRegistryInterface $filterRegistry
@@ -123,6 +133,7 @@ final class Importer implements ImporterInterface
         $this->loaderRegistry = $loaderRegistry;
         $this->eventDispatcher = $eventDispatcher;
         $this->logger = $logger;
+        $this->processHash = uniqid(time());
     }
 
     /**
@@ -155,6 +166,7 @@ final class Importer implements ImporterInterface
 
         if (\count($data) > 0) {
             $this->eventDispatcher->dispatch($definition, 'import_definition.total', \count($data), $params);
+            $this->eventDispatcher->dispatch($definition, 'import_definition.hash', $this->processHash);
 
             list($objectIds, $exceptions) = $this->runImport($definition, $params, $filter, $data);
         }
@@ -267,6 +279,12 @@ final class Importer implements ImporterInterface
                     \Pimcore::collectGarbage();
                     $this->logger->info('Clean Garbage');
                     $this->eventDispatcher->dispatch($definition, 'import_definition.status', 'Collect Garbage', $params);
+                }
+
+                if (($count + 1) % self::CHECK_IF_STOPPED_COUNT === 0) {
+                    if ($this->shouldStop()) {
+                        break;
+                    }
                 }
 
                 $count++;
@@ -528,5 +546,38 @@ final class Importer implements ImporterInterface
     {
         $placeholderHelper = new Placeholder();
         return $placeholderHelper->replacePlaceholders($definition->getKey(), $data);
+    }
+
+    /**
+     * @return bool
+     */
+    private function shouldStop(): bool
+    {
+        $process = $this->getProcess();
+        if (!$process) {
+            return false;
+        }
+
+        return (false === $process->getRunning());
+    }
+
+    /**
+     * @return ProcessInterface|null
+     */
+    private function getProcess(): ?ProcessInterface
+    {
+        $repositoryClass = '\\ProcessManagerBundle\\Repository\\ProcessRepositoryInterface';
+        if (!class_exists($repositoryClass)) {
+            return null;
+        }
+
+        /** @var ProcessRepositoryInterface $processRepository */
+        $processRepository = \Pimcore::getContainer()->get('process_manager.repository.process');
+        $process = $processRepository->findOneBy(['hash' => $this->processHash]);
+        if ($process instanceof ProcessInterface) {
+            return $process;
+        }
+
+        return null;
     }
 }

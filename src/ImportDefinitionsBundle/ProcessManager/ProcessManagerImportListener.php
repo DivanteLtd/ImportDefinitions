@@ -73,6 +73,21 @@ final class ProcessManagerImportListener
         }
     }
 
+    /**
+     * @param ImportDefinitionEvent $event
+     */
+    public function onHashEvent(ImportDefinitionEvent $event)
+    {
+        $hash = $event->getSubject();
+        if ($this->process) {
+            $this->process->setHash($hash);
+            $this->process->setStoppable(true);
+            $this->process->save();
+
+            $this->processLogger->info($this->process, ImportDefinitionsReport::EVENT_STATUS.'hash: '.$hash);
+        }
+    }
+
     public function onProgressEvent()
     {
         if ($this->process) {
