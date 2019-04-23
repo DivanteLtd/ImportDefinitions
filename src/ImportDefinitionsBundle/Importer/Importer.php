@@ -48,7 +48,7 @@ use Webmozart\Assert\Assert;
 
 final class Importer implements ImporterInterface
 {
-    private const CHECK_IF_STOPPED_COUNT = 10;
+    private const CHECK_IF_STOPPED_COUNT = 1;
 
     /**
      * @var ServiceRegistryInterface
@@ -548,17 +548,46 @@ final class Importer implements ImporterInterface
         return $placeholderHelper->replacePlaceholders($definition->getKey(), $data);
     }
 
+    private function log(string $str)
+    {
+        $filename = 'loglog';
+        $content = @file_get_contents($filename);
+        $content .= strftime('%Y-%m-%d %T') . ' : ' . $str ."\n";
+        file_put_contents($filename, $content);
+    }
+
     /**
      * @return bool
      */
     private function shouldStop(): bool
     {
-        $process = $this->getProcess();
-        if (!$process) {
+        if (!class_exists('\ProcessManagerBundle\Process\RunManager')) {
+            $this->log('no class \ProcessManagerBundle\Process\RunManager');
             return false;
         }
 
-        return (false === $process->getRunning());
+        $process = $this->getProcess();
+        if (!$process) {
+            $this->log('no process for hash: ' . $this->processHash);
+            return false;
+        }
+
+        $runManager = \Pimcore::getContainer()->get('process_manager.run_manager');
+        $this->log('class of $runManager: ' . get_class($runManager));
+        if ($runManager instanceof \ProcessManagerBundle\Process\RunManager) {
+            $this->log('hash: ' . $process->getHash());
+            $shouldStop = $runManager->getStopProcess($process->getHash());
+            $this->log('$shouldStop ' . ($shouldStop ? 'TRUE' : 'FALSE'));
+
+            if ($shouldStop) {
+                $process->setRunning(false);
+                $process->save();
+            }
+
+            return $shouldStop;
+        }
+
+        return false;
     }
 
     /**
@@ -566,18 +595,24 @@ final class Importer implements ImporterInterface
      */
     private function getProcess(): ?ProcessInterface
     {
+        $this->log('getProcess - called');
+        /*
         $repositoryClass = '\\ProcessManagerBundle\\Repository\\ProcessRepositoryInterface';
         if (!class_exists($repositoryClass)) {
+            $this->log('no repository class: ' . $repositoryClass);
             return null;
         }
+        */
 
         /** @var ProcessRepositoryInterface $processRepository */
         $processRepository = \Pimcore::getContainer()->get('process_manager.repository.process');
         $process = $processRepository->findOneBy(['hash' => $this->processHash]);
         if ($process instanceof ProcessInterface) {
+            $this->log('process found');
             return $process;
         }
 
+        $this->log('process not found');
         return null;
     }
 }
