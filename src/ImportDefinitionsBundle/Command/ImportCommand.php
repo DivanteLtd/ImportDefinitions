@@ -113,6 +113,13 @@ EOT
             $progress->start();
         };
 
+        $imHash = function (ImportDefinitionEvent $e) use ($output, $definition, &$progress, &$process) {
+            if ($progress instanceof ProgressBar) {
+                $progress->setMessage($e->getSubject());
+                $progress->display();
+            }
+        };
+
         $imProgress = function (ImportDefinitionEvent $e) use ($output, &$progress, &$process) {
             if ($progress instanceof ProgressBar) {
                 $progress->advance();
@@ -132,6 +139,7 @@ EOT
         $eventDispatcher->addListener('import_definition.status', $imStatus);
         $eventDispatcher->addListener('import_definition.status.child', $imStatus);
         $eventDispatcher->addListener('import_definition.total', $imTotal);
+        $eventDispatcher->addListener('import_definition.hash', $imHash);
         $eventDispatcher->addListener('import_definition.progress', $imProgress);
         $eventDispatcher->addListener('import_definition.finished', $imFinished);
 
@@ -140,6 +148,7 @@ EOT
         $eventDispatcher->removeListener('import_definition.status', $imStatus);
         $eventDispatcher->removeListener('import_definition.status.child', $imStatus);
         $eventDispatcher->removeListener('import_definition.total', $imTotal);
+        $eventDispatcher->removeListener('import_definition.hash', $imHash);
         $eventDispatcher->removeListener('import_definition.progress', $imProgress);
         $eventDispatcher->removeListener('import_definition.finished', $imFinished);
 

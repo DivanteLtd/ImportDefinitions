@@ -6,6 +6,7 @@ services:
             - '@process_manager.logger'
         tags:
             - { name: 'kernel.event_listener', event: 'import_definition.total', method: 'onTotalEvent' }
+            - { name: 'kernel.event_listener', event: 'import_definition.hash', method: 'onHashEvent' }
             - { name: 'kernel.event_listener', event: 'import_definition.progress', method: 'onProgressEvent' }
             - { name: 'kernel.event_listener', event: 'import_definition.status', method: 'onStatusEvent' }
             - { name: 'kernel.event_listener', event: 'import_definition.finished', method: 'onFinishedEvent' }
