@@ -164,12 +164,12 @@ final class Importer implements ImporterInterface
         /** @var ImportDataSetInterface|array $data */
         $data = $this->getData($definition, $params);
 
-        if (\count($data) > 0) {
+        if ((is_array($data) || $data instanceof \Countable) && \count($data) > 0) {
             $this->eventDispatcher->dispatch($definition, 'import_definition.total', \count($data), $params);
             $this->eventDispatcher->dispatch($definition, 'import_definition.hash', $this->processHash);
-
-            list($objectIds, $exceptions) = $this->runImport($definition, $params, $filter, $data);
         }
+
+        list($objectIds, $exceptions) = $this->runImport($definition, $params, $filter, $data);
 
         $cleanerType = $definition->getCleaner();
         if ($cleanerType) {
@@ -194,8 +194,11 @@ final class Importer implements ImporterInterface
 
         if (\count($exceptions) > 0) {
             $this->sendDocument($definition, Document::getById($definition->getFailureNotificationDocument()), $objectIds, $exceptions);
+            $this->eventDispatcher->dispatch($definition, 'import_definition.processing_failure', $params);
+
         } else {
             $this->sendDocument($definition, Document::getById($definition->getSuccessNotificationDocument()), $objectIds, $exceptions);
+            $this->eventDispatcher->dispatch($definition, 'import_definition.processing_success', $params);
         }
 
         $this->eventDispatcher->dispatch($definition, 'import_definition.finished', '', $params);
@@ -317,6 +320,9 @@ final class Importer implements ImporterInterface
      */
     private function importRow(ImportDefinitionInterface $definition, $data, $dataSet, $params, $filter = null)
     {
+        if (null === $data) {
+            return null;
+        }
         $runner = null;
 
         $object = $this->getObject($definition, $data, $params);

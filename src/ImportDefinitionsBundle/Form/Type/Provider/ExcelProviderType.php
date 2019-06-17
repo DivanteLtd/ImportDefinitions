@@ -12,29 +12,19 @@
  * @license    https://github.com/w-vision/ImportDefinitions/blob/master/gpl-3.0.txt GNU General Public License version 3 (GPLv3)
  */
 
-namespace ImportDefinitionsBundle\Form\Type\Interpreter;
+namespace ImportDefinitionsBundle\Form\Type\Provider;
 
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 
-final class HrefInterpreterType extends AbstractType
+final class ExcelProviderType extends AbstractType
 {
-    /**
-     * {@inheritdoc}
-     */
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder
-            ->add('type', ChoiceType::class, [
-                'choices' => [
-                    'Asset' => 'asset',
-                    'DataObject' => 'object',
-                    'Document' => 'document',
-                ],
-            ])
-            ->add('class', TextType::class)
+            ->add('exampleFile', TextType::class)
+            ->add('excelHeaders', TextType::class)
         ;
     }
 
@@ -43,6 +33,6 @@ final class HrefInterpreterType extends AbstractType
      */
     public function getBlockPrefix()
     {
-        return 'import_definitions_interpreter_href';
+        return 'import_definitions_provider_excel';
     }
 }

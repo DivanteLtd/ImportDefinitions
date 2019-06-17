@@ -14,14 +14,14 @@
 
 namespace ImportDefinitionsBundle\Interpreter;
 
+use Carbon\Carbon;
 use ImportDefinitionsBundle\Model\DataSetAwareInterface;
 use ImportDefinitionsBundle\Model\DataSetAwareTrait;
 use ImportDefinitionsBundle\Model\DefinitionInterface;
 use ImportDefinitionsBundle\Model\Mapping;
 use Pimcore\Model\DataObject\Concrete;
-use Pimcore\Tool;
 
-class MultiHrefInterpreter implements InterpreterInterface, DataSetAwareInterface
+class CarbonInterpreter implements InterpreterInterface, DataSetAwareInterface
 {
     use DataSetAwareTrait;
 
@@ -30,22 +30,10 @@ class MultiHrefInterpreter implements InterpreterInterface, DataSetAwareInterfac
      */
     public function interpret(Concrete $object, $value, Mapping $map, $data, DefinitionInterface $definition, $params, $configuration)
     {
-        $objectClass = $configuration['class'];
-
-        $class = 'Pimcore\Model\DataObject\\' . ucfirst($objectClass);
-
-        if (Tool::classExists($class)) {
-            $class = new $class();
-
-            if ($class instanceof Concrete) {
-                $ret = $class::getById($value);
-
-                if ($ret instanceof Concrete) {
-                    return [$ret];
-                }
-            }
+        if ($value) {
+            return new Carbon($value);
         }
 
-        return $value;
+        return null;
     }
 }
