@@ -372,9 +372,10 @@ final class Importer implements ImporterInterface
          * @var $mapItem ImportMapping
          */
         foreach ($definition->getMapping() as $mapItem) {
+            print_r($mapItem);
             $value = null;
 
-            if (array_key_exists($mapItem->getFromColumn(), $data)) {
+            if (array_key_exists($mapItem->getFromColumn(), $data) || $mapItem->getFromColumn() === "custom") {
                 $value = $data[$mapItem->getFromColumn()];
                 $this->setObjectValue($object, $mapItem, $value, $data, $dataSet, $definition, $params, $runner);
             }
