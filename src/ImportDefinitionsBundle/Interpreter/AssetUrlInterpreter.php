@@ -24,6 +24,7 @@ use Pimcore\Model\Asset;
 use Pimcore\Model\DataObject\Concrete;
 use ImportDefinitionsBundle\Service\Placeholder;
 use Pimcore\Tool as PimcoreTool;
+use PimcoreDevkitBundle\Service\AssetService;
 
 class AssetUrlInterpreter implements InterpreterInterface, DataSetAwareInterface
 {
@@ -37,11 +38,17 @@ class AssetUrlInterpreter implements InterpreterInterface, DataSetAwareInterface
     protected $placeholderService;
 
     /**
+     * @var AssetService
+     */
+    protected $assetService;
+
+    /**
      * @param Placeholder $placeholderService
      */
     public function __construct(Placeholder $placeholderService)
     {
         $this->placeholderService = $placeholderService;
+        $this->assetService = \Pimcore::getContainer()->get(AssetService::class);
     }
 
     /**
@@ -54,14 +61,7 @@ class AssetUrlInterpreter implements InterpreterInterface, DataSetAwareInterface
 
         if (filter_var($value, FILTER_VALIDATE_URL)) {
             $filename = File::getValidFilename(basename($value));
-            $assetsUrlPrefix = PimcoreTool::getHostUrl() . str_replace(PIMCORE_WEB_ROOT, '', PIMCORE_ASSET_DIRECTORY);
-            
-            // check if URL seems to be pointing to our own asset URL
-            $assetFullPath = str_replace($assetsUrlPrefix, '', $value);
-            if (0 === strpos($value, $assetsUrlPrefix) && null !== $asset = Asset::getByPath($assetFullPath)) {
-                $filename = $asset->getFilename();
-                $assetPath = dirname($assetFullPath);
-            } elseif ($configuration['deduplicate_by_url']) {
+            if ($configuration['deduplicate_by_url']) {
                 $listing = new Asset\Listing();
                 $listing->onCreateQuery(function (\Pimcore\Db\ZendCompatibility\QueryBuilder $select){
                     $select->join('assets_metadata AS am', 'id = am.cid', ['cid']);
@@ -89,16 +89,12 @@ class AssetUrlInterpreter implements InterpreterInterface, DataSetAwareInterface
 
             if (!$asset instanceof Asset) {
                 // Download
-                $data = @file_get_contents($value);
-
-                if ($data) {
-                    $asset = new Asset();
-                    $asset->setFilename($filename);
-                    $asset->setParent($parent);
-                    $asset->setData($data);
+                $asset = $this->assetService->getHttpAsset($value, $parent, $filename);
+                if ($asset) {
                     $asset->addMetadata(self::METADATA_ORIGIN_URL, 'text', $value);
                     $asset->save();
                 }
+
             } else {
                 $save = false;
 
