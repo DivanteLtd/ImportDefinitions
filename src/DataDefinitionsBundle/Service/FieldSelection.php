@@ -20,6 +20,12 @@ use Wvision\Bundle\DataDefinitionsBundle\Model\ImportMapping\ToColumn;
 
 class FieldSelection
 {
+    /** @var array */
+    private $activatedLanguages = [];
+
+    /** @var DataObject\ClassDefinition  */
+    private $class = null;
+
     /**
      * @param DataObject\ClassDefinition $class
      * @return array
@@ -27,7 +33,8 @@ class FieldSelection
      */
     public function getClassDefinition(DataObject\ClassDefinition $class): array
     {
-        $fields = $class->getFieldDefinitions();
+        $this->class = $class;
+        $fields = $this->class->getFieldDefinitions();
 
         $systemColumns = [
             'o_published',
@@ -37,9 +44,9 @@ class FieldSelection
             'o_type',
         ];
 
-        $result = [];
+        $fieldsTree = [];
 
-        $activatedLanguages = Tool::getValidLanguages();
+        $this->activatedLanguages = Tool::getValidLanguages();
 
         foreach ($systemColumns as $sysColumn) {
             $toColumn = new ToColumn();
@@ -49,28 +56,54 @@ class FieldSelection
             $toColumn->setIdentifier($sysColumn);
             $toColumn->setType('systemColumn');
             $toColumn->setGroup('systemColumn');
+            $toColumn->setPath($sysColumn);
 
-            $result[] = $toColumn;
+            $fieldsTree[] = $toColumn;
         }
 
         foreach ($fields as $field) {
-            if ($field instanceof DataObject\ClassDefinition\Data\Localizedfields) {
-                foreach ($activatedLanguages as $language) {
+            $fieldsTree[] = $this->processFieldConfiguration($field);
+        }
+
+        $results = [];
+
+        // Flatten the multidimensional array
+        $traverseTree = function ($array) use (&$traverseTree, &$results) {
+            foreach ($array as $item) {
+                if ($item instanceof ToColumn) {
+                    $results[] = $item;
+                } elseif (is_array($item)) {
+                    $traverseTree($item);
+                }
+            }
+        };
+
+        $traverseTree($fieldsTree);
+
+        return $results;
+    }
+
+    /**
+     * Collects fields from class and structured fields assigned to it
+     * @param $field
+     * @param null $path
+     * @return array
+     * @throws \Exception
+     */
+    protected function processFieldConfiguration(DataObject\ClassDefinition\Data $field, $path = null) : array
+    {
+        $result = [];
+        switch (true) {
+            case $field instanceof DataObject\ClassDefinition\Data\Localizedfields:
+                foreach ($this->activatedLanguages as $language) {
                     $localizedFields = $field->getFieldDefinitions();
 
                     foreach ($localizedFields as $localizedField) {
-                        $localizedField = $this->getFieldConfiguration($localizedField);
-
-                        $localizedField->setGroup('localizedfield.'.strtolower($language));
-                        $localizedField->setType('localizedfield.'.$language);
-                        $localizedField->setIdentifier(sprintf('%s~%s', $localizedField->getIdentifier(), $language));
-                        $localizedField->setSetter('localizedfield');
-                        $localizedField->setConfig(['language' => $language]);
-                        $localizedField->setSetterConfig(['language' => $language]);
-                        $result[] = $localizedField;
+                        $result[] = $this->processFieldConfiguration($localizedField, $path . "localizedfield." . strtolower($language) . "~");
                     }
                 }
-            } elseif ($field instanceof DataObject\ClassDefinition\Data\Objectbricks) {
+                break;
+            case $field instanceof DataObject\ClassDefinition\Data\Objectbricks:
                 $list = new DataObject\Objectbrick\Definition\Listing();
                 $list = $list->load();
 
@@ -80,26 +113,12 @@ class FieldSelection
                         $classDefs = $brickDefinition->getClassDefinitions();
 
                         foreach ($classDefs as $classDef) {
-                            if ($classDef['classname'] === $class->getName() &&
+                            if ($classDef['classname'] === $this->class->getName() &&
                                 $classDef['fieldname'] === $field->getName()) {
                                 $fields = $brickDefinition->getFieldDefinitions();
 
                                 foreach ($fields as $brickField) {
-                                    $resultField = $this->getFieldConfiguration($brickField);
-
-                                    $resultField->setGroup('objectbrick.'.$key);
-                                    $resultField->setType('objectbrick');
-                                    $resultField->setIdentifier(
-                                        sprintf(
-                                            'objectbrick~%s~%s~%s',
-                                            $field->getName(),
-                                            $key,
-                                            $resultField->getIdentifier()
-                                        )
-                                    );
-                                    $resultField->setSetter('objectbrick');
-                                    $resultField->setConfig(['class' => $key]);
-                                    $result[] = $resultField;
+                                    $result[] = $this->processFieldConfiguration($brickField, $path . "objectbrick." . $field->getName() . "." . $key . "~");
                                 }
 
                                 break;
@@ -107,88 +126,25 @@ class FieldSelection
                         }
                     }
                 }
-            } elseif ($field instanceof DataObject\ClassDefinition\Data\Fieldcollections) {
-                $result[] = $this->getFieldConfiguration($field);
-
+                break;
+            case $field instanceof DataObject\ClassDefinition\Data\Fieldcollections:
                 foreach ($field->getAllowedTypes() as $type) {
                     $definition = DataObject\Fieldcollection\Definition::getByKey($type);
 
                     $fieldDefinition = $definition->getFieldDefinitions();
 
                     foreach ($fieldDefinition as $fieldcollectionField) {
-                        $resultField = $this->getFieldConfiguration($fieldcollectionField);
-
-                        $resultField->setGroup('fieldcollection.'.$type);
-                        $resultField->setType('fieldcollection');
-                        $resultField->setIdentifier(
-                            sprintf(
-                                'fieldcollection~%s~%s~%s',
-                                $field->getName(),
-                                $type,
-                                $resultField->getIdentifier()
-                            )
-                        );
-                        $resultField->setSetter('fieldcollection');
-                        $resultField->setConfig(['class' => $type]);
-
-                        $result[] = $resultField;
+                        $result[] = $this->processFieldConfiguration($fieldcollectionField, $path . "fieldcollection." . $type . "~");
                     }
                 }
-            } elseif ($field instanceof DataObject\ClassDefinition\Data\Classificationstore) {
-                $list = new DataObject\Classificationstore\GroupConfig\Listing();
-
-                $allowedGroupIds = $field->getAllowedGroupIds();
-
-                if ($allowedGroupIds) {
-                    $list->setCondition('ID in ('.implode(',', $allowedGroupIds).') AND storeId = ?',
-                        [$field->getStoreId()]);
-                } else {
-                    $list->setCondition('storeId = ?', [$field->getStoreId()]);
-                }
-
-                $list->load();
-
-                $groupConfigList = $list->getList();
-
-                /**
-                 * @var DataObject\Classificationstore\GroupConfig $config
-                 */
-                foreach ($groupConfigList as $config) {
-                    foreach ($config->getRelations() as $relation) {
-                        if ($relation instanceof DataObject\Classificationstore\KeyGroupRelation) {
-                            $keyId = $relation->getKeyId();
-
-                            $keyConfig = DataObject\Classificationstore\KeyConfig::getById($keyId);
-
-                            $toColumn = new ToColumn();
-                            $toColumn->setGroup(
-                                sprintf('classificationstore - %s (%s)', $config->getName(), $config->getId())
-                            );
-                            $toColumn->setIdentifier(
-                                sprintf(
-                                    'classificationstore~%s~%s~%s',
-                                    $field->getName(),
-                                    $keyConfig->getId(),
-                                    $config->getId()
-                                )
-                            );
-                            $toColumn->setType('classificationstore');
-                            $toColumn->setFieldtype($keyConfig->getType());
-                            $toColumn->setSetter('classificationstore');
-                            $toColumn->setConfig([
-                                'field' => $field->getName(),
-                                'keyId' => $keyConfig->getId(),
-                                'groupId' => $config->getId(),
-                            ]);
-                            $toColumn->setLabel($keyConfig->getName());
-
-                            $result[] = $toColumn;
-                        }
-                    }
-                }
-            } else {
-                $result[] = $this->getFieldConfiguration($field);
-            }
+                break;
+            case $field instanceof DataObject\ClassDefinition\Data\Classificationstore:
+                // We don't need to traverse here recursively as CS cannot be a part of other structure
+                $result[] = $this->getClassificationStoreConfiguration($field);
+                break;
+            default:
+                $result[] = $this->getFieldConfiguration($field, $path);
+                break;
         }
 
         return $result;
@@ -196,16 +152,100 @@ class FieldSelection
 
     /**
      * @param DataObject\ClassDefinition\Data $field
+     * @return array
+     */
+    protected function getClassificationStoreConfiguration(DataObject\ClassDefinition\Data $field) : array
+    {
+        return $result;
+        $list = new DataObject\Classificationstore\GroupConfig\Listing();
+
+        $allowedGroupIds = $field->getAllowedGroupIds();
+
+        if ($allowedGroupIds) {
+            $list->setCondition('ID in ('.implode(',', $allowedGroupIds).') AND storeId = ?',
+                [$field->getStoreId()]);
+        } else {
+            $list->setCondition('storeId = ?', [$field->getStoreId()]);
+        }
+
+        $list->load();
+
+        $groupConfigList = $list->getList();
+
+        /**
+         * @var DataObject\Classificationstore\GroupConfig $config
+         */
+        foreach ($groupConfigList as $config) {
+            foreach ($config->getRelations() as $relation) {
+                if ($relation instanceof DataObject\Classificationstore\KeyGroupRelation) {
+                    $keyId = $relation->getKeyId();
+
+                    $keyConfig = DataObject\Classificationstore\KeyConfig::getById($keyId);
+
+                    $toColumn = new ToColumn();
+                    $toColumn->setGroup(
+                        sprintf('classificationstore - %s (%s)', $config->getName(), $config->getId())
+                    );
+                    $path = sprintf(
+                        'classificationstore~%s~%s~%s',
+                        $field->getName(),
+                        $keyConfig->getId(),
+                        $config->getId()
+                    );
+                    $toColumn->setIdentifier($path);
+                    $toColumn->setPath($path);
+                    $toColumn->setType('classificationstore');
+                    $toColumn->setFieldtype($keyConfig->getType());
+                    $toColumn->setSetter('classificationstore');
+                    $toColumn->setConfig([
+                        'field' => $field->getName(),
+                        'keyId' => $keyConfig->getId(),
+                        'groupId' => $config->getId(),
+                    ]);
+                    $toColumn->setLabel($keyConfig->getName());
+
+                    $result[] = $toColumn;
+                }
+            }
+        }
+
+        return $result;
+    }
+
+
+    /**
+     * @param DataObject\ClassDefinition\Data $field
      * @return ToColumn
      */
-    protected function getFieldConfiguration(DataObject\ClassDefinition\Data $field): ToColumn
+    protected function getFieldConfiguration(DataObject\ClassDefinition\Data $field, ?string $path) : ToColumn
     {
         $toColumn = new ToColumn();
 
         $toColumn->setLabel($field->getName());
         $toColumn->setFieldtype($field->getFieldtype());
-        $toColumn->setIdentifier($field->getName());
-        $toColumn->setGroup('fields');
+
+        // To keep BC
+        if ($path && count($structures = explode("~", $path)) > 1) {
+            $structureName = explode(".", $structures[count($structures)-2])[0];
+            switch ($structureName) {
+                case "localizedfield":
+                    $toColumn->setIdentifier($field->getName() . "~" . explode(".", $structures[count($structures)-2])[1]);
+                    break;
+                default:
+                    $toColumn->setIdentifier($field->getName());
+                    break;
+            }
+        } else {
+            $toColumn->setIdentifier($field->getName());
+        }
+
+        if ($path) {
+            $toColumn->setGroup(implode(".", array_slice(explode("~", $path), 0 , -1)));
+        } else {
+            $toColumn->setGroup('fields');
+        }
+
+        $toColumn->setPath($path . $field->getName());
 
         return $toColumn;
     }

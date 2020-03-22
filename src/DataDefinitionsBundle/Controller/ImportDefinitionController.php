@@ -139,6 +139,7 @@ class ImportDefinitionController extends ResourceController
                                 'setterConfig' => $mapping->getSetterConfig(),
                                 'interpreter' => $mapping->getInterpreter(),
                                 'interpreterConfig' => $mapping->getInterpreterConfig(),
+                                'path' => $classToColumn->getPath()
                             ];
 
                             break;
@@ -157,6 +158,7 @@ class ImportDefinitionController extends ResourceController
                         'setterConfig' => $classToColumn->getSetterConfig(),
                         'interpreter' => $classToColumn->getInterpreter(),
                         'interpreterConfig' => $classToColumn->getInterpreterConfig(),
+                        'path' => $classToColumn->getPath()
                     ];
                 }
             }

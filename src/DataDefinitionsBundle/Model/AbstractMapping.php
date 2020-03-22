@@ -37,6 +37,11 @@ abstract class AbstractMapping implements MappingInterface
     public $interpreterConfig;
 
     /**
+     * @var string
+     */
+    public $path;
+
+    /**
      * @param array $values
      */
     public function setValues(array $values)
@@ -116,6 +121,22 @@ abstract class AbstractMapping implements MappingInterface
     public function setInterpreterConfig($interpreterConfig)
     {
         $this->interpreterConfig = $interpreterConfig;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getPath(): ?string
+    {
+        return $this->path;
+    }
+
+    /**
+     * @param string|null $path
+     */
+    public function setPath(?string $path): void
+    {
+        $this->path = $path;
     }
 }
 

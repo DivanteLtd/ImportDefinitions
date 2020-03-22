@@ -28,13 +28,11 @@ class LocalizedfieldSetter implements SetterInterface, GetterInterface
      */
     public function set(Concrete $object, $value, ImportMapping $map, $data)
     {
-        $config = $map->getSetterConfig();
-
-        $setter = explode('~', $map->getToColumn());
-        $setter = sprintf('set%s', ucfirst($setter[0]));
+        $setterArray = explode('~', $map->getToColumn());
+        $setter = sprintf('set%s', ucfirst($setterArray[0]));
 
         if (method_exists($object, $setter)) {
-            $object->$setter($value, $config['language']);
+            $object->$setter($value, $setterArray[1]);
         }
     }
 

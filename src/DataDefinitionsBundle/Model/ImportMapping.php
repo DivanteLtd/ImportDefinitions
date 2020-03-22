@@ -32,6 +32,11 @@ class ImportMapping extends AbstractMapping
     public $setterConfig;
 
     /**
+     * @var string
+     */
+    public $path;
+
+    /**
      * @return bool|null
      */
     public function getPrimaryIdentifier()
@@ -77,6 +82,22 @@ class ImportMapping extends AbstractMapping
     public function setSetterConfig($setterConfig)
     {
         $this->setterConfig = $setterConfig;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getPath(): ?string
+    {
+        return $this->path;
+    }
+
+    /**
+     * @param string|null $path
+     */
+    public function setPath(?string $path): void
+    {
+        $this->path = $path;
     }
 }
 

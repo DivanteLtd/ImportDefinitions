@@ -63,6 +63,10 @@ class ToColumn extends AbstractColumn
      */
     public $group;
 
+    /** @var null|string */
+    public $path;
+
+
     /**
      * @return string
      */
@@ -205,6 +209,22 @@ class ToColumn extends AbstractColumn
     public function setGroup(string $group)
     {
         $this->group = $group;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getPath(): ?string
+    {
+        return $this->path;
+    }
+
+    /**
+     * @param string|null $path
+     */
+    public function setPath(?string $path): void
+    {
+        $this->path = $path;
     }
 }
 

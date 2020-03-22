@@ -68,7 +68,7 @@ pimcore.plugin.datadefinitions.export.fields = Class.create({
 
         if (this.selectionPanel) {
             var allowedColumns = [
-                'fromColumn', 'toColumn', 'getter', 'getterConfig', 'interpreter', 'interpreterConfig'
+                'fromColumn', 'toColumn', 'getter', 'getterConfig', 'interpreter', 'interpreterConfig', 'path'
             ];
 
             this.selectionPanel.getRootNode().eachChild(function (child) {
